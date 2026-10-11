@@ -1,0 +1,61 @@
+t,v,k,N_new,N_previous_Nov2024,gain,previous_source
+3,5,32,324,349,25,Restricted CPHF Sim Annealing (TJ-IM)
+3,5,33,325,349,24,Restricted CPHF Sim Annealing (TJ-IM)
+3,5,34,325,349,24,Restricted CPHF Sim Annealing (TJ-IM)
+3,5,35,325,349,24,Restricted CPHF Sim Annealing (TJ-IM)
+3,5,36,325,349,24,Restricted CPHF Sim Annealing (TJ-IM)
+3,5,37,350,365,15,SCPHF Sim Annealing (TJ-IM)
+3,7,58,930,979,49,Add a factor
+3,7,59,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
+3,7,60,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
+3,7,61,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
+3,7,62,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
+3,7,63,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
+3,7,64,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
+3,7,65,980,1015,35,SCPHF Sim Annealing (TJ-IM)
+3,11,134,3750,3871,121,Add a factor
+3,11,135,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,136,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,137,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,138,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,139,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,140,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,141,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,142,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,143,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,144,3751,3971,220,SCPHF Conditional Expectation (CLS)
+3,11,145,3872,3971,99,SCPHF Conditional Expectation (CLS)
+3,13,184,6252,6421,169,Add a factor
+3,13,185,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,186,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,187,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,188,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,189,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,190,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,191,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,192,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,193,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,194,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,195,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,196,6253,6565,312,SCPHF Conditional Expectation (CLS)
+3,13,197,6422,6565,143,SCPHF Conditional Expectation (CLS)
+3,19,382,19854,20215,361,Add a factor
+3,19,383,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,384,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,385,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,386,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,387,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,388,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,389,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,390,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,391,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,392,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,393,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,394,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,395,19855,20539,684,SCPHF Conditional Expectation (CLS)
+3,19,396,19855,20574,719,"perfect hash family2,760,381T361"
+3,19,397,19855,20574,719,"perfect hash family2,760,381T361"
+3,19,398,19855,20574,719,"perfect hash family2,760,381T361"
+3,19,399,19855,20574,719,"perfect hash family2,760,381T361"
+3,19,400,19855,20575,720,CPHF Random Extension (CLS)
+3,19,401,20216,20575,359,CPHF Random Extension (CLS)
