@@ -13,6 +13,24 @@ t,v,k,N_new,N_previous_Nov2024,gain,previous_source
 3,7,63,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
 3,7,64,931,1014,83,SCPHF Conditional Expectation (CLS) fuse
 3,7,65,980,1015,35,SCPHF Sim Annealing (TJ-IM)
+3,8,74,1407,1447,40,SCPHF LFSR (TJ-IM) fuse
+3,8,75,1408,1447,39,SCPHF LFSR (TJ-IM) fuse
+3,8,76,1408,1455,47,Raaphorst-Moura-Stevens fuse
+3,8,77,1408,1455,47,Raaphorst-Moura-Stevens fuse
+3,8,78,1408,1455,47,Raaphorst-Moura-Stevens fuse
+3,8,79,1408,1455,47,Raaphorst-Moura-Stevens fuse
+3,8,80,1408,1455,47,Raaphorst-Moura-Stevens fuse
+3,8,81,1408,1455,47,Raaphorst-Moura-Stevens fuse
+3,9,92,2024,2105,81,Add a factor
+3,9,93,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,94,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,95,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,96,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,97,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,98,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,99,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,100,2025,2169,144,SCPHF Conditional Expectation (CLS)
+3,9,101,2106,2169,63,SCPHF Conditional Expectation (CLS)
 3,11,134,3750,3871,121,Add a factor
 3,11,135,3751,3971,220,SCPHF Conditional Expectation (CLS)
 3,11,136,3751,3971,220,SCPHF Conditional Expectation (CLS)

@@ -24,6 +24,22 @@ test_that("RMScopies works", {
   expect_equal(dim(D), c(980, 65))
   expect_true(caverify::ca_verify(D, 3)$covered)
 
+  ## prime powers (Galois field arithmetic from lhs)
+  D <- RMScopies(4)
+  expect_equal(dim(D), c(127, 21))
+  expect_true(caverify::ca_verify(D, 3)$covered)
+  D <- RMScopies(4, 1)
+  expect_equal(dim(D), c(159, 22))
+  expect_true(caverify::ca_verify(D, 3)$covered)
+  for (m in c(2, 4, 5, 7)){
+    D <- RMScopies(4, m)
+    expect_equal(nrow(D), N_RMScopiesCA(3, 21 + m, 4))
+    expect_true(caverify::ca_verify(D, 3)$covered)
+  }
+  D <- RMScopiesCA(74, 8)
+  expect_equal(dim(D), c(1407, 74))
+  expect_true(caverify::ca_verify(D, 3)$covered)
+
   ## interface function
   E <- RMScopiesCA(37, 5)
   expect_s3_class(E, "ca")
@@ -39,9 +55,15 @@ test_that("RMScopies works", {
   expect_equal(N_RMScopiesCA(3, 58, 7), 930)
   expect_true(is.na(N_RMScopiesCA(4, 32, 5)))
   expect_true(is.na(N_RMScopiesCA(3, 32, 6)))
+  expect_equal(N_RMScopiesCA(3, 81, 8), 1408)
+  expect_equal(N_RMScopiesCA(3, 100, 9), 2025)
+  expect_true(is.na(N_RMScopiesCA(3, 120, 10)))
 
   ## invalid input
   expect_error(RMScopies(6))
+  expect_error(RMScopies(12))
+  expect_error(RMScopies(2, 1))
+  expect_true(is.na(N_RMScopiesCA(3, 8, 2)))
   expect_error(RMScopies(5, 32))
   expect_error(RMScopiesCA(32, 6))
 })

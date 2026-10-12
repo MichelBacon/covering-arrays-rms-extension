@@ -13,14 +13,14 @@ RMScopies(q, m=0)
 N_RMScopiesCA(t=3, k, v, ...)
 }
 \arguments{
-\item{q}{integer: a prime}
+\item{q}{integer: a prime or prime power}
 
 \item{m}{integer: the number of added columns (shifted copies),
-\code{0 <= m <= q^2+q+1}}
+\code{0 <= m <= q^2+q+1} (\code{m=0} for \code{q=2})}
 
 \item{k}{integer: the target number of columns}
 
-\item{v}{integer: the number of levels (must be a prime)}
+\item{v}{integer: the number of levels (must be a prime or prime power)}
 
 \item{t}{integer: the target strength (always 3)}
 
@@ -35,11 +35,15 @@ function \code{N_RMScopiesCA} returns the run size of the CA
 }
 \description{
 The Raaphorst-Moura-Stevens (2014) construction yields a CA(2q^3-1; 3, q^2+q+1, q)
-for prime \code{q}. Function \code{RMScopies} extends it by \code{m} additional columns,
+for prime powers \code{q}. Function \code{RMScopies} extends it by \code{m} additional columns,
 each of which is a shifted copy of an existing column, plus a few layers of
 additional runs.
 }
 \details{
+All arithmetic is in the Galois field GF(q), as provided by
+\code{\link[lhs]{create_galois_field}} (elements coded as 0, ..., q-1;
+for prime q, this is arithmetic modulo q).
+
 \bold{Base array} (\code{m=0}, Raaphorst, Moura and Stevens 2014):
 the k0 = q^2+q+1 columns correspond to the points \eqn{p_j}{p_j} of the
 projective plane PG(2,q), ordered as the powers of a root of a primitive
@@ -52,9 +56,9 @@ all triples of columns are covered.
 
 \bold{Shifted copies} (\code{m>=1}): new column \eqn{n_i}{n_i} is a copy of
 column \eqn{c_i = i}{c_i = i} in the zero row and in B1, and equals
-\eqn{c_i + 1}{c_i + 1} (mod q) in B2. The only uncovered 3-tuples are then
+\eqn{c_i + 1}{c_i + 1} (in GF(q)) in B2. The only uncovered 3-tuples are then
 found in column triples \eqn{\{c_i, n_i, w\}}{{c_i, n_i, w}}, for differences
-\eqn{n_i - c_i \in \{2, \dots, q-1\}}{n_i - c_i in {2, ..., q-1}}.
+\eqn{n_i - c_i}{n_i - c_i} different from 0 and 1 (field elements coded 2, ..., q-1).
 
 \bold{Layers} (\code{m>=2}): each layer consists of q^2 runs indexed by
 y in GF(q)^2. The q+1 directions of PG(1,q) yield q+1 mutually orthogonal
@@ -62,7 +66,7 @@ linear functions \eqn{y \cdot P}{y.P}. In a layer, up to q copies are active:
 active copy i receives its own direction (\eqn{c_i = y \cdot P_s}{c_i = y.P_s},
 \eqn{n_i = y \cdot P_s + e}{n_i = y.P_s + e}),
 all other columns receive direction \eqn{P_0}{P_0}. Each copy is active in
-q-2 layers, with e = 2, ..., q-1. A final run (0 for the original columns,
+q-2 layers, with e running through the field elements coded 2, ..., q-1. A final run (0 for the original columns,
 1 for the new columns) covers the image of x=0 in B2.
 The number of layers is \eqn{L = \max(q-2, \lceil m(q-2)/q \rceil)}{L = max(q-2, ceiling(m(q-2)/q))}.
 
@@ -75,9 +79,10 @@ Run sizes: \eqn{2q^3-1}{2q^3-1} for \code{m=0},
 \eqn{2q^3+q^2 L}{2q^3+q^2 L} for \code{m>=2}.
 
 Compared to the Colbourn tables (status November 2024), this improves
-60 entries: v=5 (k=32,...,37), v=7 (k=58,...,65), v=11 (k=134,...,145),
-v=13 (k=184,...,197), v=19 (k=382,...,401); for example CA(324; 3, 32, 5)
-instead of 349 runs, and CA(350; 3, 37, 5) instead of 365 runs.
+78 entries: v=5 (k=32,...,37), v=7 (k=58,...,65), v=8 (k=74,...,81),
+v=9 (k=92,...,101), v=11 (k=134,...,145), v=13 (k=184,...,197),
+v=19 (k=382,...,401); for example CA(324; 3, 32, 5) instead of 349 runs,
+CA(350; 3, 37, 5) instead of 365 runs, and CA(2025; 3, 100, 9) instead of 2169 runs.
 }
 \examples{
 D <- RMScopies(5)        ## the RMS array CA(249; 3, 31, 5)
@@ -86,6 +91,8 @@ E <- RMScopiesCA(32, 5)  ## CA(324; 3, 32, 5)
 dim(E)
 N_RMScopiesCA(3, 36, 5)  ## 325
 N_RMScopiesCA(3, 37, 5)  ## 350
+F <- RMScopiesCA(22, 4)  ## prime power: CA(159; 3, 22, 4)
+dim(F)
 \dontrun{
 caverify::ca_verify(E, 3)$covered
 }
