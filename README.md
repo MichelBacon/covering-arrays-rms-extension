@@ -85,6 +85,7 @@ Fix three distinct columns T. We show that every 3-tuple of values appears on T.
 ## Verification
 
 Every array in `arrays/` was checked by brute force (every triple of columns, every value combination) with checkers written independently of the construction code: `verify.py` (Python) and `verify.c` (C).
+- All 20 arrays in `arrays/` also pass `ca_verify.c` from C. Smolen's `ca-tools` (the kernel behind the R package `caverify`).
 - Sanity check of the checkers: removing one row of CA(1407;3,74,8), or changing a single cell of CA(2025;3,100,9), is correctly reported as INVALID.
 - The arrays for q = 19 (about 20 MB each) and a CA(11776; 3, 289, 16) were also verified but are not included. Run `python construct_layers.py 20 19` to regenerate them.
 - The R implementation in `R-contribution/` produces the same arrays, up to row order, for q = 4, 5, 7, 8, 9.
@@ -106,6 +107,7 @@ Every array in `arrays/` was checked by brute force (every triple of columns, ev
 
 ## Caveats
 
+- All 78 entries also beat the provenance-tracked table in Smolen's `ca-tools` (snapshot of 2026-08-23).
 - Novelty is established **relative to the November 2024 tables** and to the published constructions I could find (Shokri, Moura and Stevens 2023–2025 start at k = 2(q² + q + 1)). A more recent unindexed result is possible, and the idea may be considered folklore by specialists.
 - The proof above has not yet been checked by an independent human expert.
 
