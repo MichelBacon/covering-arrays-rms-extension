@@ -10,10 +10,12 @@
 #' @aliases RMScopiesCA
 #' @aliases RMScopies
 #' @aliases N_RMScopiesCA
+#' @aliases RMScopies_tested
 #'
 #' @usage RMScopiesCA(k, v, ...)
-#' @usage RMScopies(q, m=0)
-#' @usage N_RMScopiesCA(t=3, k, v, ...)
+#' @usage RMScopies(q, m=0, tested_only=TRUE)
+#' @usage N_RMScopiesCA(t=3, k, v, tested_only=TRUE, ...)
+#' @usage RMScopies_tested
 #'
 #' @param k integer: the target number of columns
 #' @param v integer: the number of levels (must be a prime or prime power)
@@ -21,9 +23,23 @@
 #' @param m integer: the number of added columns (shifted copies),
 #'          \code{0 <= m <= q^2+q+1} (\code{m=0} for \code{q=2})
 #' @param t integer: the target strength (always 3)
+#' @param tested_only logical: if \code{TRUE} (default), only the combinations
+#'          \code{(q, m)} listed in \code{RMScopies_tested} are allowed.
+#'          \code{RMScopies(q, m, tested_only=FALSE)} builds other combinations
+#'          for exploration (e.g. as examples or counterexamples for the proof);
+#'          such arrays should be checked with \code{caverify::ca_verify}.
 #' @param ... currently not used
 #'
 #' @details
+#' \bold{Tested parameters}: the data frame \code{RMScopies_tested} lists all
+#' combinations \code{(q, m)} for which the array produced by this R code was
+#' verified exhaustively (all triples of columns, all value combinations).
+#' \code{RMScopiesCA(k, v)} and \code{N_RMScopiesCA} only use these combinations:
+#' for k columns they take the smallest tested number of copies that is at least
+#' \code{k - (v^2+v+1)}, and keep
+#' the first k columns (dropping columns of a CA yields a CA). Extend the data
+#' frame after verifying further cases.
+#'
 #' All arithmetic is in the Galois field GF(q), as provided by
 #' \code{\link[lhs]{create_galois_field}} (elements coded as 0, ..., q-1;
 #' for prime q, this is arithmetic modulo q).
@@ -68,7 +84,9 @@
 #' v=19 (k=382,...,401); for example CA(324; 3, 32, 5) instead of 349 runs,
 #' CA(350; 3, 37, 5) instead of 365 runs, and CA(2025; 3, 100, 9) instead of 2169 runs.
 #'
-#' @returns Function \code{RMScopiesCA} returns a matrix of class \code{ca}
+#' @returns \code{RMScopies_tested} is a data frame with columns \code{q},
+#' \code{m}, \code{k} (= q^2+q+1+m), \code{N} (run size) and \code{verifier}.\cr
+#' Function \code{RMScopiesCA} returns a matrix of class \code{ca}
 #' with attributes, which is a strength 3 covering array.\cr
 #' Function \code{RMScopies} returns a matrix without class and attributes,\cr
 #' function \code{N_RMScopiesCA} returns the run size of the CA
@@ -85,6 +103,10 @@
 #' dim(E)
 #' N_RMScopiesCA(3, 36, 5)  ## 325
 #' N_RMScopiesCA(3, 37, 5)  ## 350
+#' head(RMScopies_tested)
+#' ## an untested combination is refused unless explicitly requested
+#' try(RMScopies(11, 50))
+#' dim(RMScopies(11, 50, tested_only=FALSE))
 #' F <- RMScopiesCA(22, 4)  ## prime power: CA(159; 3, 22, 4)
 #' dim(F)
 #' \dontrun{
@@ -92,12 +114,15 @@
 #' }
 #'
 #' @export
-RMScopies <- function(q, m=0){
+RMScopies <- function(q, m=0, tested_only=TRUE){
   stopifnot(length(q) == 1, q == round(q), q >= 2)
   if (!.RMS_isprimepower(q)) stop("q must be a prime or prime power")
   k0 <- q^2 + q + 1
   stopifnot(m == round(m), m >= 0, m <= k0)
   if (q == 2 && m > 0) stop("for q=2, only m=0 is supported")
+  if (tested_only && !.RMS_tested(q, m))
+    stop("(q, m) = (", q, ", ", m, ") is not in RMScopies_tested; ",
+         "use tested_only=FALSE to build it anyway, and verify the result")
   gf <- lhs::create_galois_field(q)
   ## Singer cycle: powers of a root of a primitive cubic
   P <- .RMS_singer_points(gf)[1:k0, , drop=FALSE]
@@ -149,6 +174,10 @@ RMScopiesCA <- function(k, v, ...){
   k0 <- v^2 + v + 1
   m <- max(0, k - k0)
   if (m > k0) stop("k must not exceed 2*(v^2+v+1)")
+  m <- .RMS_tested_m(v, m)   ## smallest tested m' >= m (columns are then dropped)
+  if (is.na(m))
+    stop("no tested RMScopies array for k = ", k, ", v = ", v,
+         " (see RMScopies_tested)")
   aus <- RMScopies(v, m)[, 1:k, drop=FALSE]
   class(aus) <- c("ca", class(aus))
   attr(aus, "origin") <- if (m == 0) "Raaphorst-Moura-Stevens 2014"
@@ -159,19 +188,37 @@ RMScopiesCA <- function(k, v, ...){
 }
 
 #' @export
-N_RMScopiesCA <- function(t=3, k, v, ...){
+N_RMScopiesCA <- function(t=3, k, v, tested_only=TRUE, ...){
   if (!t == 3) return(NA)
   if (!.RMS_isprimepower(v)) return(NA)
   q <- v; k0 <- q^2 + q + 1
   m <- max(0, k - k0)
   if (m > k0) return(NA)
   if (q == 2 && m > 0) return(NA)
+  if (tested_only){
+    m <- .RMS_tested_m(q, m)
+    if (is.na(m)) return(NA)
+  }
+  .RMS_N(q, m)
+}
+
+## internal helpers
+.RMS_N <- function(q, m){
+  ## run size of RMScopies(q, m)
   if (m == 0) return(2*q^3 - 1)
   if (m == 1) return(2*q^3 - 1 + q^2*(q - 2))
   2*q^3 + q^2*max(q - 2, ceiling(m*(q - 2)/q))
 }
 
-## internal helpers
+.RMS_tested <- function(q, m)
+  any(RMScopies_tested$q == q & RMScopies_tested$m == m)
+
+.RMS_tested_m <- function(q, m){
+  ## smallest tested number of copies m' >= m for this q (NA if none)
+  cand <- RMScopies_tested$m[RMScopies_tested$q == q & RMScopies_tested$m >= m]
+  if (length(cand) == 0) NA else min(cand)
+}
+
 .RMS_isprimepower <- function(n){
   if (length(n) != 1 || !is.numeric(n) || n != round(n) || n < 2) return(FALSE)
   p <- 2
@@ -227,3 +274,32 @@ N_RMScopiesCA <- function(t=3, k, v, ...){
   }
   stop("no primitive polynomial found")
 }
+
+#' @rdname RMScopies
+#' @export
+RMScopies_tested <- local({
+  ## Combinations (q, m) whose arrays, as produced by RMScopies(q, m), were
+  ## verified exhaustively (October 2026):
+  ## - all except q = 19: the R output was checked with ca_verify.c
+  ##   (C kernel of caverify, from github.com/chrispbsmolen/ca-tools);
+  ## - q = 19: the R output coincides (same multiset of rows) with the arrays
+  ##   of the Python implementation, which passed an independent brute-force
+  ##   checker (verify.c in github.com/MichelBacon/covering-arrays-rms-extension).
+  aus <- rbind(
+    data.frame(q = 3,  m = 0:13),
+    data.frame(q = 4,  m = 0:21),
+    data.frame(q = 5,  m = 0:31),
+    data.frame(q = 7,  m = 0:57),
+    data.frame(q = 8,  m = 0:73),
+    data.frame(q = 9,  m = 0:91),
+    data.frame(q = 11, m = c(0:13, 22)),
+    data.frame(q = 13, m = 0:14),
+    data.frame(q = 16, m = c(0, 1, 16)),
+    data.frame(q = 19, m = c(1, 19, 20))
+  )
+  aus$k <- aus$q^2 + aus$q + 1 + aus$m
+  aus$N <- mapply(.RMS_N, aus$q, aus$m)
+  aus$verifier <- ifelse(aus$q == 19, "identical to verified Python array",
+                         "ca_verify (ca-tools)")
+  aus
+})

@@ -59,6 +59,23 @@ test_that("RMScopies works", {
   expect_equal(N_RMScopiesCA(3, 100, 9), 2025)
   expect_true(is.na(N_RMScopiesCA(3, 120, 10)))
 
+  ## tested parameters
+  expect_s3_class(RMScopies_tested, "data.frame")
+  expect_true(all(c("q", "m", "k", "N", "verifier") %in% names(RMScopies_tested)))
+  expect_false(any(duplicated(RMScopies_tested[, c("q", "m")])))
+  for (r in which(RMScopies_tested$q <= 5 & RMScopies_tested$m %in% c(0, 1, 2, 5)))
+    expect_equal(nrow(RMScopies(RMScopies_tested$q[r], RMScopies_tested$m[r])),
+                 RMScopies_tested$N[r])
+  ## untested combinations: refused unless explicitly requested
+  expect_error(RMScopies(11, 50))
+  expect_true(is.na(N_RMScopiesCA(3, 183, 11)))
+  expect_error(RMScopiesCA(183, 11))
+  D <- RMScopies(11, 50, tested_only = FALSE)
+  expect_equal(nrow(D), N_RMScopiesCA(3, 183, 11, tested_only = FALSE))
+  ## between tested values, the smallest tested m' >= m is used
+  expect_equal(N_RMScopiesCA(3, 390, 19), 19855)
+  expect_equal(N_RMScopiesCA(3, 140, 11), 3751)
+
   ## invalid input
   expect_error(RMScopies(6))
   expect_error(RMScopies(12))

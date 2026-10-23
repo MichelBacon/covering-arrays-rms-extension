@@ -1,4 +1,4 @@
-From 5086cc4e1b88c058f4847e8e903a2f7a29f7a2b7 Mon Sep 17 00:00:00 2001
+From ebbe2f32c5cd2380e971b91987d19eb7432159ec Mon Sep 17 00:00:00 2001
 From: Mickael Bergeron <mickael.bergeron.pro@gmail.com>
 Date: Sun, 11 Oct 2026 12:04:15 -0400
 Subject: [PATCH] Add RMScopies: Raaphorst-Moura-Stevens strength-3 CAs,
@@ -7,7 +7,9 @@ Subject: [PATCH] Add RMScopies: Raaphorst-Moura-Stevens strength-3 CAs,
 - RMScopies(q, m): the RMS (2014) array CA(2q^3-1; 3, q^2+q+1, q) for prime
   powers q (GF arithmetic via lhs::create_galois_field), extended by m shifted
   copies of existing columns plus layers of q^2 runs.
-- RMScopiesCA(k, v) and N_RMScopiesCA(t, k, v) follow the package conventions.
+- RMScopies_tested: data frame of the (q, m) combinations whose arrays were
+  verified exhaustively. RMScopiesCA(k, v) and N_RMScopiesCA(t, k, v) only use
+  these; RMScopies(q, m, tested_only=FALSE) builds other cases for exploration.
 - Run sizes: 2q^3-1 (m=0), 2q^3-1+q^2(q-2) (m=1),
   2q^3+q^2*max(q-2, ceiling(m(q-2)/q)) (m>=2); m>=1 needs q>=3.
 - Improves 78 entries of the Colbourn tables (Nov 2024 status), e.g.
@@ -19,17 +21,17 @@ Subject: [PATCH] Add RMScopies: Raaphorst-Moura-Stevens strength-3 CAs,
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_016kJVGYEHcVo8hHYdVCWAbN
 ---
- NAMESPACE                       |   3 +
- R/RMScopies.R                   | 229 ++++++++++++++++++++++++++++++++
- man/RMScopies.Rd                | 105 +++++++++++++++
- tests/testthat/test-RMScopies.R |  69 ++++++++++
- 4 files changed, 406 insertions(+)
+ NAMESPACE                       |   4 +
+ R/RMScopies.R                   | 305 ++++++++++++++++++++++++++++++++
+ man/RMScopies.Rd                | 136 ++++++++++++++
+ tests/testthat/test-RMScopies.R |  86 +++++++++
+ 4 files changed, 531 insertions(+)
  create mode 100644 R/RMScopies.R
  create mode 100644 man/RMScopies.Rd
  create mode 100644 tests/testthat/test-RMScopies.R
 
 diff --git a/NAMESPACE b/NAMESPACE
-index 6cbda6c..1a983cd 100644
+index 6cbda6c..0e238bf 100644
 --- a/NAMESPACE
 +++ b/NAMESPACE
 @@ -42,6 +42,7 @@ export(N_KSK)
@@ -40,21 +42,22 @@ index 6cbda6c..1a983cd 100644
  export(N_SCA_Busht)
  export(N_TJcat)
  export(N_WKScat)
-@@ -74,6 +75,8 @@ export(Ns_derive)
+@@ -74,6 +75,9 @@ export(Ns_derive)
  export(Ns_fuse)
  export(Ns_productCA)
  export(ODbasedCA)
 +export(RMScopies)
 +export(RMScopiesCA)
++export(RMScopies_tested)
  export(SCA_Bose)
  export(SCA_Busht)
  export(SCA_LCDST)
 diff --git a/R/RMScopies.R b/R/RMScopies.R
 new file mode 100644
-index 0000000..a26d90a
+index 0000000..b996c53
 --- /dev/null
 +++ b/R/RMScopies.R
-@@ -0,0 +1,229 @@
+@@ -0,0 +1,305 @@
 +#' Strength 3 CAs from the Raaphorst-Moura-Stevens construction, extended by shifted column copies
 +#'
 +#' The Raaphorst-Moura-Stevens (2014) construction yields a CA(2q^3-1; 3, q^2+q+1, q)
@@ -67,10 +70,12 @@ index 0000000..a26d90a
 +#' @aliases RMScopiesCA
 +#' @aliases RMScopies
 +#' @aliases N_RMScopiesCA
++#' @aliases RMScopies_tested
 +#'
 +#' @usage RMScopiesCA(k, v, ...)
-+#' @usage RMScopies(q, m=0)
-+#' @usage N_RMScopiesCA(t=3, k, v, ...)
++#' @usage RMScopies(q, m=0, tested_only=TRUE)
++#' @usage N_RMScopiesCA(t=3, k, v, tested_only=TRUE, ...)
++#' @usage RMScopies_tested
 +#'
 +#' @param k integer: the target number of columns
 +#' @param v integer: the number of levels (must be a prime or prime power)
@@ -78,9 +83,23 @@ index 0000000..a26d90a
 +#' @param m integer: the number of added columns (shifted copies),
 +#'          \code{0 <= m <= q^2+q+1} (\code{m=0} for \code{q=2})
 +#' @param t integer: the target strength (always 3)
++#' @param tested_only logical: if \code{TRUE} (default), only the combinations
++#'          \code{(q, m)} listed in \code{RMScopies_tested} are allowed.
++#'          \code{RMScopies(q, m, tested_only=FALSE)} builds other combinations
++#'          for exploration (e.g. as examples or counterexamples for the proof);
++#'          such arrays should be checked with \code{caverify::ca_verify}.
 +#' @param ... currently not used
 +#'
 +#' @details
++#' \bold{Tested parameters}: the data frame \code{RMScopies_tested} lists all
++#' combinations \code{(q, m)} for which the array produced by this R code was
++#' verified exhaustively (all triples of columns, all value combinations).
++#' \code{RMScopiesCA(k, v)} and \code{N_RMScopiesCA} only use these combinations:
++#' for k columns they take the smallest tested number of copies that is at least
++#' \code{k - (v^2+v+1)}, and keep
++#' the first k columns (dropping columns of a CA yields a CA). Extend the data
++#' frame after verifying further cases.
++#'
 +#' All arithmetic is in the Galois field GF(q), as provided by
 +#' \code{\link[lhs]{create_galois_field}} (elements coded as 0, ..., q-1;
 +#' for prime q, this is arithmetic modulo q).
@@ -125,7 +144,9 @@ index 0000000..a26d90a
 +#' v=19 (k=382,...,401); for example CA(324; 3, 32, 5) instead of 349 runs,
 +#' CA(350; 3, 37, 5) instead of 365 runs, and CA(2025; 3, 100, 9) instead of 2169 runs.
 +#'
-+#' @returns Function \code{RMScopiesCA} returns a matrix of class \code{ca}
++#' @returns \code{RMScopies_tested} is a data frame with columns \code{q},
++#' \code{m}, \code{k} (= q^2+q+1+m), \code{N} (run size) and \code{verifier}.\cr
++#' Function \code{RMScopiesCA} returns a matrix of class \code{ca}
 +#' with attributes, which is a strength 3 covering array.\cr
 +#' Function \code{RMScopies} returns a matrix without class and attributes,\cr
 +#' function \code{N_RMScopiesCA} returns the run size of the CA
@@ -142,6 +163,10 @@ index 0000000..a26d90a
 +#' dim(E)
 +#' N_RMScopiesCA(3, 36, 5)  ## 325
 +#' N_RMScopiesCA(3, 37, 5)  ## 350
++#' head(RMScopies_tested)
++#' ## an untested combination is refused unless explicitly requested
++#' try(RMScopies(11, 50))
++#' dim(RMScopies(11, 50, tested_only=FALSE))
 +#' F <- RMScopiesCA(22, 4)  ## prime power: CA(159; 3, 22, 4)
 +#' dim(F)
 +#' \dontrun{
@@ -149,12 +174,15 @@ index 0000000..a26d90a
 +#' }
 +#'
 +#' @export
-+RMScopies <- function(q, m=0){
++RMScopies <- function(q, m=0, tested_only=TRUE){
 +  stopifnot(length(q) == 1, q == round(q), q >= 2)
 +  if (!.RMS_isprimepower(q)) stop("q must be a prime or prime power")
 +  k0 <- q^2 + q + 1
 +  stopifnot(m == round(m), m >= 0, m <= k0)
 +  if (q == 2 && m > 0) stop("for q=2, only m=0 is supported")
++  if (tested_only && !.RMS_tested(q, m))
++    stop("(q, m) = (", q, ", ", m, ") is not in RMScopies_tested; ",
++         "use tested_only=FALSE to build it anyway, and verify the result")
 +  gf <- lhs::create_galois_field(q)
 +  ## Singer cycle: powers of a root of a primitive cubic
 +  P <- .RMS_singer_points(gf)[1:k0, , drop=FALSE]
@@ -206,6 +234,10 @@ index 0000000..a26d90a
 +  k0 <- v^2 + v + 1
 +  m <- max(0, k - k0)
 +  if (m > k0) stop("k must not exceed 2*(v^2+v+1)")
++  m <- .RMS_tested_m(v, m)   ## smallest tested m' >= m (columns are then dropped)
++  if (is.na(m))
++    stop("no tested RMScopies array for k = ", k, ", v = ", v,
++         " (see RMScopies_tested)")
 +  aus <- RMScopies(v, m)[, 1:k, drop=FALSE]
 +  class(aus) <- c("ca", class(aus))
 +  attr(aus, "origin") <- if (m == 0) "Raaphorst-Moura-Stevens 2014"
@@ -216,19 +248,37 @@ index 0000000..a26d90a
 +}
 +
 +#' @export
-+N_RMScopiesCA <- function(t=3, k, v, ...){
++N_RMScopiesCA <- function(t=3, k, v, tested_only=TRUE, ...){
 +  if (!t == 3) return(NA)
 +  if (!.RMS_isprimepower(v)) return(NA)
 +  q <- v; k0 <- q^2 + q + 1
 +  m <- max(0, k - k0)
 +  if (m > k0) return(NA)
 +  if (q == 2 && m > 0) return(NA)
++  if (tested_only){
++    m <- .RMS_tested_m(q, m)
++    if (is.na(m)) return(NA)
++  }
++  .RMS_N(q, m)
++}
++
++## internal helpers
++.RMS_N <- function(q, m){
++  ## run size of RMScopies(q, m)
 +  if (m == 0) return(2*q^3 - 1)
 +  if (m == 1) return(2*q^3 - 1 + q^2*(q - 2))
 +  2*q^3 + q^2*max(q - 2, ceiling(m*(q - 2)/q))
 +}
 +
-+## internal helpers
++.RMS_tested <- function(q, m)
++  any(RMScopies_tested$q == q & RMScopies_tested$m == m)
++
++.RMS_tested_m <- function(q, m){
++  ## smallest tested number of copies m' >= m for this q (NA if none)
++  cand <- RMScopies_tested$m[RMScopies_tested$q == q & RMScopies_tested$m >= m]
++  if (length(cand) == 0) NA else min(cand)
++}
++
 +.RMS_isprimepower <- function(n){
 +  if (length(n) != 1 || !is.numeric(n) || n != round(n) || n < 2) return(FALSE)
 +  p <- 2
@@ -284,31 +334,75 @@ index 0000000..a26d90a
 +  }
 +  stop("no primitive polynomial found")
 +}
++
++#' @rdname RMScopies
++#' @export
++RMScopies_tested <- local({
++  ## Combinations (q, m) whose arrays, as produced by RMScopies(q, m), were
++  ## verified exhaustively (October 2026):
++  ## - all except q = 19: the R output was checked with ca_verify.c
++  ##   (C kernel of caverify, from github.com/chrispbsmolen/ca-tools);
++  ## - q = 19: the R output coincides (same multiset of rows) with the arrays
++  ##   of the Python implementation, which passed an independent brute-force
++  ##   checker (verify.c in github.com/MichelBacon/covering-arrays-rms-extension).
++  aus <- rbind(
++    data.frame(q = 3,  m = 0:13),
++    data.frame(q = 4,  m = 0:21),
++    data.frame(q = 5,  m = 0:31),
++    data.frame(q = 7,  m = 0:57),
++    data.frame(q = 8,  m = 0:73),
++    data.frame(q = 9,  m = 0:91),
++    data.frame(q = 11, m = c(0:13, 22)),
++    data.frame(q = 13, m = 0:14),
++    data.frame(q = 16, m = c(0, 1, 16)),
++    data.frame(q = 19, m = c(1, 19, 20))
++  )
++  aus$k <- aus$q^2 + aus$q + 1 + aus$m
++  aus$N <- mapply(.RMS_N, aus$q, aus$m)
++  aus$verifier <- ifelse(aus$q == 19, "identical to verified Python array",
++                         "ca_verify (ca-tools)")
++  aus
++})
 diff --git a/man/RMScopies.Rd b/man/RMScopies.Rd
 new file mode 100644
-index 0000000..8c67551
+index 0000000..6df2506
 --- /dev/null
 +++ b/man/RMScopies.Rd
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,136 @@
 +% Generated by roxygen2: do not edit by hand
 +% Please edit documentation in R/RMScopies.R
++\docType{data}
 +\name{RMScopies}
 +\alias{RMScopies}
 +\alias{RMScopiesCA}
 +\alias{N_RMScopiesCA}
++\alias{RMScopies_tested}
 +\title{Strength 3 CAs from the Raaphorst-Moura-Stevens construction, extended by shifted column copies}
++\format{
++An object of class \code{data.frame} with 328 rows and 5 columns.
++}
 +\usage{
 +RMScopiesCA(k, v, ...)
 +
-+RMScopies(q, m=0)
++RMScopies(q, m=0, tested_only=TRUE)
 +
-+N_RMScopiesCA(t=3, k, v, ...)
++N_RMScopiesCA(t=3, k, v, tested_only=TRUE, ...)
++
++RMScopies_tested
++
++RMScopies_tested
 +}
 +\arguments{
 +\item{q}{integer: a prime or prime power}
 +
 +\item{m}{integer: the number of added columns (shifted copies),
 +\code{0 <= m <= q^2+q+1} (\code{m=0} for \code{q=2})}
++
++\item{tested_only}{logical: if \code{TRUE} (default), only the combinations
++\code{(q, m)} listed in \code{RMScopies_tested} are allowed.
++\code{RMScopies(q, m, tested_only=FALSE)} builds other combinations
++for exploration (e.g. as examples or counterexamples for the proof);
++such arrays should be checked with \code{caverify::ca_verify}.}
 +
 +\item{k}{integer: the target number of columns}
 +
@@ -319,6 +413,8 @@ index 0000000..8c67551
 +\item{...}{currently not used}
 +}
 +\value{
++\code{RMScopies_tested} is a data frame with columns \code{q},
++\code{m}, \code{k} (= q^2+q+1+m), \code{N} (run size) and \code{verifier}.\cr
 +Function \code{RMScopiesCA} returns a matrix of class \code{ca}
 +with attributes, which is a strength 3 covering array.\cr
 +Function \code{RMScopies} returns a matrix without class and attributes,\cr
@@ -332,6 +428,15 @@ index 0000000..8c67551
 +additional runs.
 +}
 +\details{
++\bold{Tested parameters}: the data frame \code{RMScopies_tested} lists all
++combinations \code{(q, m)} for which the array produced by this R code was
++verified exhaustively (all triples of columns, all value combinations).
++\code{RMScopiesCA(k, v)} and \code{N_RMScopiesCA} only use these combinations:
++for k columns they take the smallest tested number of copies that is at least
++\code{k - (v^2+v+1)}, and keep
++the first k columns (dropping columns of a CA yields a CA). Extend the data
++frame after verifying further cases.
++
 +All arithmetic is in the Galois field GF(q), as provided by
 +\code{\link[lhs]{create_galois_field}} (elements coded as 0, ..., q-1;
 +for prime q, this is arithmetic modulo q).
@@ -383,6 +488,10 @@ index 0000000..8c67551
 +dim(E)
 +N_RMScopiesCA(3, 36, 5)  ## 325
 +N_RMScopiesCA(3, 37, 5)  ## 350
++head(RMScopies_tested)
++## an untested combination is refused unless explicitly requested
++try(RMScopies(11, 50))
++dim(RMScopies(11, 50, tested_only=FALSE))
 +F <- RMScopiesCA(22, 4)  ## prime power: CA(159; 3, 22, 4)
 +dim(F)
 +\dontrun{
@@ -395,12 +504,13 @@ index 0000000..8c67551
 +strength-3 covering arrays from linear feedback shift register sequences.
 +Designs, Codes and Cryptography 73, 949-968.
 +}
++\keyword{datasets}
 diff --git a/tests/testthat/test-RMScopies.R b/tests/testthat/test-RMScopies.R
 new file mode 100644
-index 0000000..a0d55d4
+index 0000000..46d70d5
 --- /dev/null
 +++ b/tests/testthat/test-RMScopies.R
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,86 @@
 +library(CAs)
 +test_that("RMScopies works", {
 +  ## base construction (Raaphorst-Moura-Stevens 2014)
@@ -461,6 +571,23 @@ index 0000000..a0d55d4
 +  expect_equal(N_RMScopiesCA(3, 81, 8), 1408)
 +  expect_equal(N_RMScopiesCA(3, 100, 9), 2025)
 +  expect_true(is.na(N_RMScopiesCA(3, 120, 10)))
++
++  ## tested parameters
++  expect_s3_class(RMScopies_tested, "data.frame")
++  expect_true(all(c("q", "m", "k", "N", "verifier") %in% names(RMScopies_tested)))
++  expect_false(any(duplicated(RMScopies_tested[, c("q", "m")])))
++  for (r in which(RMScopies_tested$q <= 5 & RMScopies_tested$m %in% c(0, 1, 2, 5)))
++    expect_equal(nrow(RMScopies(RMScopies_tested$q[r], RMScopies_tested$m[r])),
++                 RMScopies_tested$N[r])
++  ## untested combinations: refused unless explicitly requested
++  expect_error(RMScopies(11, 50))
++  expect_true(is.na(N_RMScopiesCA(3, 183, 11)))
++  expect_error(RMScopiesCA(183, 11))
++  D <- RMScopies(11, 50, tested_only = FALSE)
++  expect_equal(nrow(D), N_RMScopiesCA(3, 183, 11, tested_only = FALSE))
++  ## between tested values, the smallest tested m' >= m is used
++  expect_equal(N_RMScopiesCA(3, 390, 19), 19855)
++  expect_equal(N_RMScopiesCA(3, 140, 11), 3751)
 +
 +  ## invalid input
 +  expect_error(RMScopies(6))
