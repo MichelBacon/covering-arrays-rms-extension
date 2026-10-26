@@ -101,14 +101,40 @@ Every array in `arrays/` was checked by brute force (every triple of columns, ev
 - `arrays/CA_N_t_k_v.txt`: the arrays, one test per line, values 0 … v − 1.
 - `improvements.csv`: the 78 improved entries.
 - `search/`: exploration tools used along the way (simulated annealing in C, CP-SAT model).
-- `R-contribution/`: an implementation for the R package `CAs`, with the corresponding git patch:
-  - functions `RMScopies`, `RMScopiesCA` and `N_RMScopiesCA`, for prime powers via `lhs::create_galois_field`;
-  - documentation and tests.
+- `R-contribution/`: the R implementation contributed to the package `CAs` ([pull request #72](https://github.com/ugroempi/CAs/pull/72), merged into `CAs` 0.25, October 2026):
+  - functions `RMScopies`, `RMScopiesCA`, `N_RMScopiesCA` and `k_RMScopiesCA`, for prime powers via `lhs::create_galois_field`, restricted by default to the 328 tested (q, m) combinations;
+  - documentation, tests, and the log of the verifications (`RMScopies_tested_verification.csv`).
+  - These files are the version of the pull request. The maintained version is the one in `CAs`, where the list of tested combinations is the data set `rmsCOPIEScat`.
+
+## Related work
+
+The closest published construction is the *x-plication* of K. Shokri and L. Moura (J. Combin. Des. 33 (2025) 156–171, doi:10.1002/jcd.21963; also Chapter 5 of Shokri's 2026 Ottawa thesis), pointed out by C. Smolen. It also starts from the RMS array and places copies of it side by side, within the Roux-type framework of Colbourn, Martirosyan, Trung and Walker (2006) and Chateauneuf and Kreher (2002).
+
+- In their 2-plication, CA(4q³ − 5q² + 2q ; 3, 2(q² + q + 1), q), the second copy is identical to the first on one orthogonal array and shifted by a constant on the other. That is the shifted copy of step 2 above, applied to all q² + q + 1 columns at once.
+- The difference is the completion. The 2-plication adds q − 2 blocks of 2q² − q rows (a strength-2 covering array plus constants). Here only m columns are copied, and the missing tuples are covered by layers of q² rows, each shared by up to q copies.
+- This construction is therefore a partial 2-plication, with a cheaper completion when m is small. For large m, the 2-plication is much better: for q = 5 and k = 62, it gives 385 rows, against 725 here.
+
+| q | 2-plication: N for k = 2(q² + q + 1) | Smaller here up to k = | Largest k of an improved entry |
+|---|---|---|---|
+| 5 | 385 (k = 62) | 39 | 37 |
+| 7 | 1141 (k = 114) | 69 | 65 |
+| 8 | 1744 (k = 146) | 87 | 81 |
+| 9 | 2529 (k = 182) | 107 | 101 |
+| 11 | 4741 (k = 266) | 153 | 145 |
+| 13 | 7969 (k = 366) | 207 | 197 |
+| 19 | 25669 (k = 762) | 417 | 401 |
+
+All 78 improved entries lie below the crossover, so none of them is beaten by deleting columns from a 2-plication array. Smolen compared Table 5.6 of the thesis with these entries and found no point where either beats the other. Case 3 of the proof uses the same kind of argument as Case 2 of their general theorem (Theorem 5.2.6 of the thesis): differences between two columns.
+
+Other background:
+- S. Raaphorst, L. Moura and B. Stevens, A construction for strength-3 covering arrays from linear feedback shift register sequences, Des. Codes Cryptogr. 73 (2014) 949–968 (the base array).
+- Sets of mutually orthogoval projective and affine planes, arXiv:2210.11961 (the geometry behind the base array, for more than two planes).
+- G. Tzanakis, L. Moura, D. Panario and B. Stevens, Constructing new covering arrays from LFSR sequences over finite fields, Discrete Math. 339 (2016) (the same family of arrays at other strengths).
 
 ## Caveats
 
 - All 78 entries also beat the provenance-tracked table in Smolen's `ca-tools` (snapshot of 2026-08-23).
-- Novelty is established **relative to the November 2024 tables** and to the published constructions I could find (Shokri, Moura and Stevens 2023–2025 start at k = 2(q² + q + 1)). A more recent unindexed result is possible, and the idea may be considered folklore by specialists.
+- Novelty is established **relative to the November 2024 tables** and to the published constructions I could find. The closest one, the 2-plication of Shokri and Moura (see Related work), uses the same shifted copy for all columns at once. The partial version with a layered completion appears to be new, but specialists may consider it a minor variant.
 - The proof above has not yet been checked by an independent human expert.
 
 ## Acknowledgement
